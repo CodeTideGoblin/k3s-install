@@ -1,3 +1,5 @@
+[Youtube video](https://youtu.be/drmZjI6JWs8?si=GI5dSdZwLpFFYcKd)
+
 # k3s-install
 
 As root:
