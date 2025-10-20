@@ -1,0 +1,13 @@
+# OS / Editor
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# K8s local files
+*.local.yaml
+secrets/*.yaml
+
+# Cloudflared creds
+.cloudflared/
