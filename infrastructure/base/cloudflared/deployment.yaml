@@ -2,7 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cloudflared
-  namespace: cloudflared
+  labels:
+    app: cloudflared
 spec:
   selector:
     matchLabels:
@@ -68,19 +69,3 @@ spec:
           items:
           - key: config.yaml
             path: config.yaml
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cloudflared
-  namespace: cloudflared
-data:
-  config.yaml: |
-    tunnel: my-tunnel
-    credentials-file: /etc/cloudflared/creds/credentials.json
-    metrics: 0.0.0.0:2000
-    no-autoupdate: true
-    ingress:
-    - hostname: "*.sotools.cc"
-      service: http://traefik.kube-system.svc.cluster.local:80
-    - service: http_status:404

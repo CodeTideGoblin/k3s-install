@@ -1,81 +1,202 @@
-[Youtube video](https://youtu.be/drmZjI6JWs8?si=GI5dSdZwLpFFYcKd)
-
 # k3s-install
 
-As root:
+A production-ready k3s deployment repository demonstrating secure application hosting with external access via Cloudflare Tunnel. This repository follows Kubernetes best practices with Kustomize-based configuration management.
 
-```vi /etc/fstab```
-
-Comment out the SWAP entry.
-After saving the file, disable SWAP by running:
-
-```swapoff -a```
-
-Check the memory:
-
-```free -m```
-
-Install k3s:
-
-```curl -sfL https://get.k3s.io | sh -    ```
-
-# Preserve source IP
+## 🏗️ Repository Structure
 
 ```
+k3s-install/
+├── apps/                          # Application configurations
+│   ├── base/                     # Base configurations for all apps
+│   │   ├── whoami/              # Demo web application
+│   │   └── uptime/              # Uptime monitoring application
+│   └── overlays/                 # Environment-specific configurations
+├── infrastructure/               # Infrastructure components
+│   ├── base/                     # Base infrastructure
+│   │   ├── namespaces.yaml      # Namespace definitions
+│   │   └── cloudflared/         # Cloudflare tunnel configuration
+│   └── overlays/                 # Infrastructure overlays
+│       └── metallb/             # MetalLB load balancer (optional)
+├── overlays/                     # Environment deployments
+│   ├── development/             # Development environment
+│   ├── staging/                 # Staging environment
+│   └── production/              # Production environment
+├── scripts/                      # Operational scripts
+│   ├── deploy.sh                # Deployment script
+│   ├── validate.sh              # Validation script
+│   ├── setup-cloudflared.sh     # Cloudflare tunnel setup
+│   └── cleanup.sh               # Cleanup script
+└── docs/                        # Documentation
+```
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- k3s cluster installed and running
+- kubectl configured to access your cluster
+- Cloudflare account (for external access)
+- Domain name configured in Cloudflare
+
+### 1. Initial Setup
+
+```bash
+# Disable swap (required for k3s)
+sudo swapoff -a
+sudo sed -i '/ swap / s/^/#/' /etc/fstab
+
+# Configure Traefik for source IP preservation
 kubectl edit svc traefik -n kube-system
-externalTrafficPolicy: Local
+# Set externalTrafficPolicy: Local
 ```
 
-# MetalLB (optional)
+### 2. Deploy Infrastructure
 
-Apply address pool and L2 advertisement if using MetalLB:
-
-```
-kubectl apply -f metallb-addr-pool.yaml
-kubectl apply -f metallb-advertise.yaml
+```bash
+# Deploy namespaces and cloudflared
+kubectl apply -k infrastructure/
 ```
 
-# Cloudflare Tunnel
+### 3. Setup Cloudflare Tunnel
 
-Install cloudflared on the host and create a Tunnel. Create the secret in the same namespace as the Deployment (cloudflared):
+```bash
+# Run the setup script
+./scripts/setup-cloudflared.sh my-tunnel yourdomain.com
 
-```
-curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
-echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflared.list
-sudo apt update && sudo apt install -y cloudflared
-cloudflared tunnel login
-cloudflared tunnel create my-tunnel
-kubectl create namespace cloudflared || true
-kubectl -n cloudflared create secret generic tunnel-credentials --from-file=credentials.json=$HOME/.cloudflared/<YOUR_TUNNEL_ID>.json
-kubectl apply -f cloudflared.yaml
-cloudflared tunnel route dns my-tunnel "*.sotools.cc"
+# Or manually configure:
+# 1. Install cloudflared on your system
+# 2. Create tunnel: cloudflared tunnel create my-tunnel
+# 3. Create secret with tunnel credentials
+# 4. Configure DNS routes
 ```
 
-# Apps: whoami and Uptime Kuma
+### 4. Deploy Applications
 
-```
-kubectl create namespace apps || true
-kubectl apply -f whoami.yaml
-kubectl apply -f uptime.yaml
-kubectl get deployment -A
-kubectl get pods -A -o wide
-kubectl get svc -A
-kubectl describe ingress whoami-ingress -n apps
-curl --header "Host: whoami.sotools.cc" <traefik_node_ip>
-```
+```bash
+# Deploy to production (default)
+./scripts/deploy.sh
 
-# Kustomize (apply everything)
-
-You can apply the whole repo with kustomize:
-
-```
-kubectl apply -k .
+# Deploy to specific environment
+./scripts/deploy.sh development
+./scripts/deploy.sh staging
+./scripts/deploy.sh production
 ```
 
-# Notes
+### 5. Validate Deployment
 
-- The manifests set resource requests/limits and basic pod security contexts.
-- Uptime Kuma persistent volume claim defaults to 5Gi and no StorageClass; set `storageClassName` as needed.
-- In `cloudflared.yaml`, adjust domain, tunnel name, and image tag as needed.
+```bash
+# Run validation checks
+./scripts/validate.sh
 
+# Test endpoints
+curl -H "Host: whoami.yourdomain.com" http://<traefik-ip>
+curl -H "Host: uptime.yourdomain.com" http://<traefik-ip>
+```
 
+## 🎯 Deployment Environments
+
+### Development
+- Single replicas for cost efficiency
+- Debug logging enabled
+- Separate namespace (`apps-dev`)
+
+### Staging
+- Multiple replicas for testing
+- Standard logging
+- Separate namespace (`apps-staging`)
+
+### Production
+- High availability with multiple replicas
+- Resource limits and PodDisruptionBudgets
+- Production namespace (`apps`)
+
+## 🔧 Configuration
+
+### Domain Configuration
+
+Update the domain in these files:
+- `infrastructure/base/cloudflared/configmap.yaml`
+- `apps/base/whoami/ingress.yaml`
+- `apps/base/uptime/ingress.yaml`
+
+### Resource Limits
+
+Base resource allocations:
+- **whoami**: 10m CPU/32Mi memory (requests), 50m CPU/64Mi memory (limits)
+- **uptime**: 50m CPU/256Mi memory (requests), 500m CPU/1Gi memory (limits)
+- **cloudflared**: 50m CPU/64Mi memory (requests), 250m CPU/256Mi memory (limits)
+
+Production environments have higher resource limits configured.
+
+### MetalLB (Optional)
+
+For bare-metal load balancing:
+
+```bash
+# Deploy MetalLB
+kubectl apply -k infrastructure/overlays/metallb/
+
+# Update IP range in metallb-addr-pool.yaml if needed
+```
+
+## 🔒 Security Features
+
+- All containers run as non-root users
+- Privilege escalation disabled
+- Read-only root filesystems where possible
+- All capabilities dropped
+- Resource requests and limits defined
+- Network policies can be added for additional isolation
+
+## 📊 Monitoring
+
+Applications include:
+- **Liveness probes**: Check application health
+- **Readiness probes**: Ensure traffic only goes to ready pods
+- **Resource monitoring**: CPU and memory usage tracking
+
+## 🧪 Testing
+
+```bash
+# Test whoami endpoint
+kubectl run test --image=curlimages/curl --rm -it -- \
+  curl -H "Host: whoami.yourdomain.com" http://traefik.kube-system.svc.cluster.local
+
+# Test uptime endpoint
+kubectl run test --image=curlimages/curl --rm -it -- \
+  curl -H "Host: uptime.yourdomain.com" http://traefik.kube-system.svc.cluster.local
+```
+
+## 🧹 Cleanup
+
+```bash
+# Cleanup specific environment
+./scripts/cleanup.sh development
+
+# Cleanup all environments (with confirmation)
+./scripts/cleanup.sh all
+
+# Force cleanup without confirmation
+./scripts/cleanup.sh production --force
+```
+
+## 📝 Notes
+
+- Uptime Kuma uses a 5Gi persistent volume claim for data storage
+- Cloudflare Tunnel credentials are stored as Kubernetes secrets
+- Traefik is used as the ingress controller (built into k3s)
+- All applications route through Cloudflare Tunnel for secure external access
+
+## 🤝 Contributing
+
+1. Make changes to base configurations in `apps/base/` or `infrastructure/base/`
+2. Test changes in development environment first
+3. Update environment overlays as needed
+4. Run validation scripts before committing
+
+## 📚 Additional Resources
+
+- [k3s Documentation](https://docs.k3s.io/)
+- [Kustomize Documentation](https://kubectl.docs.kubernetes.io/guides/introduction/kustomize/)
+- [Cloudflare Tunnel Documentation](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/)
+- [MetalLB Documentation](https://metallb.universe.tf/)

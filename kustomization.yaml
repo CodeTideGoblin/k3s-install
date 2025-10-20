@@ -1,9 +1,14 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+
+# This is the main kustomization file that deploys the entire stack
+# Use environment-specific overlays for different deployments
+
 resources:
-  - namespaces.yaml
-  - metallb-addr-pool.yaml
-  - metallb-advertise.yaml
-  - cloudflared.yaml
-  - whoami.yaml
-  - uptime.yaml
+  - infrastructure/base
+  - apps/base
+
+# Common labels applied to all resources
+commonLabels:
+  managed-by: kustomize
+  repository: k3s-install

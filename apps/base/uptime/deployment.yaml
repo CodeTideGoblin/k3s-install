@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: uptime
-  namespace: apps
   labels:
     app: uptime
 spec:
@@ -56,49 +55,3 @@ spec:
       - name: uptime-data
         persistentVolumeClaim:
           claimName: uptime-pvc
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: uptime-pvc
-  namespace: apps
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 5Gi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: uptime
-  namespace: apps
-  labels:
-    app: uptime
-spec:
-  type: ClusterIP
-  ports:
-  - port: 80
-    targetPort: 3001
-  selector:
-    app: uptime
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: uptime-ingress
-  namespace: apps
-spec:
-  ingressClassName: traefik
-  rules:
-  - host: uptime.sotools.cc
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: uptime
-            port:
-              number: 80
