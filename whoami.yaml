@@ -41,7 +41,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-  - host: whoami.linuxcloudhacks.ovh
+  - host: whoami.sotools.cc
     http:
       paths:
       - path: /

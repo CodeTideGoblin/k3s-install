@@ -59,7 +59,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-  - host: uptime.linuxcloudhacks.ovh
+  - host: uptime.sotools.cc
     http:
       paths:
       - path: /

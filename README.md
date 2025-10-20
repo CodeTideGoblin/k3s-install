@@ -36,7 +36,7 @@ cloudflared tunnel login
 cloudflared tunnel create my-tunnel
 kubectl create secret generic tunnel-credentials --from-file=credentials.json=.cloudflared/5623acb0-bf87-437a-9678-859b80abd1fb.json
 kubectl apply -f cloudflared.yaml
-cloudflared tunnel route dns my-tunnel "*.linuxcloudhacks.ovh"
+cloudflared tunnel route dns my-tunnel "*.sotools.cc"
 ```
 
 # Whoami pod
@@ -47,7 +47,7 @@ kubectl get deployment
 kubectl get pods -o wide
 kubectl get svc
 kubectl describe ingress whoami-ingress
-curl --header "Host: whoami.linuxcloudhacks.ovh" 192.168.10.230
+curl --header "Host: whoami.sotools.cc" 192.168.10.230
 ```
 
 # Uptime kuma pod
