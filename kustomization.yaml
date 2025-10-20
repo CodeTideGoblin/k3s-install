@@ -9,6 +9,8 @@ resources:
   - apps/base
 
 # Common labels applied to all resources
-commonLabels:
-  managed-by: kustomize
-  repository: k3s-install
+labels:
+  - includeSelectors: true
+    pairs:
+      managed-by: kustomize
+      repository: k3s-install

@@ -16,5 +16,7 @@ configMapGenerator:
       - environment=staging
       - log-level=info
 
-commonLabels:
-  environment: staging
+labels:
+  - includeSelectors: true
+    pairs:
+      environment: staging

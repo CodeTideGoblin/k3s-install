@@ -7,9 +7,11 @@ resources:
   - service.yaml
   - ingress.yaml
 
-commonLabels:
-  app.kubernetes.io/name: uptime
-  app.kubernetes.io/component: monitoring
-  app.kubernetes.io/part-of: k3s-apps
+labels:
+  - includeSelectors: true
+    pairs:
+      app.kubernetes.io/name: uptime
+      app.kubernetes.io/component: monitoring
+      app.kubernetes.io/part-of: k3s-apps
 
 namespace: apps

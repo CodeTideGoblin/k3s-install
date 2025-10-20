@@ -5,6 +5,8 @@ resources:
   - address-pool.yaml
   - advertisement.yaml
 
-commonLabels:
-  app.kubernetes.io/part-of: metallb
-  app.kubernetes.io/component: load-balancer
+labels:
+  - includeSelectors: true
+    pairs:
+      app.kubernetes.io/part-of: metallb
+      app.kubernetes.io/component: load-balancer
